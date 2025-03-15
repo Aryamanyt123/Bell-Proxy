@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bell Proxy</title>
+    <title>Proxy.js</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,7 +79,7 @@
         <label for="darkModeToggle">🌙 Dark Mode</label>
         <input type="checkbox" id="darkModeToggle">
     </div>
-    <h1>Bell Proxy</h1>
+    <h1>Proxy.js</h1>
     <div class="input-container">
         <label for="userId">What's your 6-digit ID?</label>
         <input type="text" id="userId" placeholder="Enter 6-digit ID" maxlength="6">
@@ -117,6 +117,12 @@
             } catch (_) {
                 return false;
             }
+        }
+        function formatUrl(input) {
+            if (!/^https?:\/\//i.test(input)) {
+                return `https://${input}`;
+            }
+            return input;
         }
         function toggleFullscreen() {
             if (document.fullscreenElement) {
@@ -164,8 +170,8 @@
             } catch (error) {
                 console.error('Error sending log to Discord:', error);
             }
-            if (isValidUrl(userQuery)) {
-                contentFrame.src = userQuery;
+            if (isValidUrl(formatUrl(userQuery))) {
+                contentFrame.src = formatUrl(userQuery);
             } else {
                 const googleSearchUrl = `https://www.google.com/webhp?igu=1&q=${encodeURIComponent(userQuery)}`;
                 contentFrame.src = googleSearchUrl;
